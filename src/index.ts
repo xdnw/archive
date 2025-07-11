@@ -99,7 +99,7 @@ async function archive(interaction: any,
     const body = JSON.stringify({
       type: 4,
       data: {
-        content: "🚫 You don’t have permission to archive this channel. Missing role: `can-archive` id: 1393088668981395608",
+        content: "🚫 You don’t have permission to archive this channel. Missing role with id: " + env.ARCHIVE_ROLE_ID + "(see <!&ROLE_ID>`",
         flags: 1 << 6  // ephemeral
       }
     });
