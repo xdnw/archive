@@ -226,6 +226,17 @@ async function getFirstMention(channelId: string, botToken: string): Promise<str
   return "";
 }
 
+interface EmbedField {
+  name: string;
+  value: string;
+}
+
+interface MessageEmbed {
+  title?: string;
+  description?: string;
+  fields?: EmbedField[];
+}
+
 async function generateArchiveZip(
   channelId: string,
   botToken: string,
@@ -266,17 +277,35 @@ async function generateArchiveZip(
   }
 
   // markdown transcript
-  const escape = (s: string) =>
-    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const escape = (s: string) => s;
   const msgs = limit ? all.slice(0, limit) : all;
   let md = "# Channel Archive: " + channelId + "\n\n" +
     msgs
       .reverse()
       .map(m => {
         const time = new Date(m.timestamp).toLocaleString();
-        const user = escape(`${m.author.username}#${m.author.discriminator}`);
+        const user = escape(`${m.author.username}${m.author.discriminator != 0 ? `#${m.author.discriminator}` : ''}`);
         const text = escape(m.content || "");
-        return `**${user}** [${time}]: ${text}`;
+
+        // include embed content
+        let embedText = "";
+        if (Array.isArray(m.embeds) && m.embeds.length > 0) {
+          embedText = m.embeds.map((e: MessageEmbed, idx: number) => {
+            const parts: string[] = [];
+            parts.push(`> [Embed #${idx + 1}]`);
+            if (e.title) parts.push(`> **${escape(e.title)}**`);
+            if (e.description) parts.push(`> ${escape(e.description)}`);
+            if (Array.isArray(e.fields)) {
+              e.fields.forEach(f => {
+                parts.push(`> - **${escape(f.name)}**: ${escape(f.value)}`);
+              });
+            }
+            return parts.join("\n");
+          }).join("\n");
+        }
+
+        return `**${user}** [${time}]: ${text}` +
+          (embedText ? "\n" + embedText : "");
       })
       .join("\n");
 
