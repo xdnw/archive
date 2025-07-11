@@ -114,4 +114,4 @@ npm run deploy
 
 ## License
 
-This project is licensed under the MIT License. See LICENSE.
+This project is licensed under the GNU AFFERO GENERAL PUBLIC LICENSE. See LICENSE.
