@@ -1,6 +1,3 @@
-xdnw: Can you write a readme for this project (discord bot with /archive command that uses a cloudflare worker)
-
-Workspace: Collecting workspace information```markdown
 # Discord Archive Bot
 
 A Cloudflare Worker–based Discord bot that provides `/ping` and `/archive` slash commands.  
