@@ -128,6 +128,7 @@ async function archive(interaction: any,
     (async () => {
       try {
         const zip = await generateArchiveZip(channelId, env.BOT_TOKEN, limit);
+        const mention = await getFirstMention(channelId, env.BOT_TOKEN);
 
         const infoRes = await fetch(
           `https://discord.com/api/v10/channels/${channelId}`,
@@ -145,7 +146,7 @@ async function archive(interaction: any,
         form.append(
           "payload_json",
           JSON.stringify({
-            content: `Archive of **#${channelName}** (ID: ${channelId})`,
+            content: `Archive of **#${channelName}** (Channel ID: ${channelId}, user: ${mention})`,
           })
         );
 
@@ -189,6 +190,40 @@ async function archive(interaction: any,
   );
 
   return ack;
+}
+
+function snowflakeToTimestamp(id: string): number {
+  const DISCORD_EPOCH = 1420070400000n;
+  return Number((BigInt(id) >> 22n) + DISCORD_EPOCH);
+}
+
+// Get the first mention of a user in a channel
+async function getFirstMention(channelId: string, botToken: string): Promise<string> {
+  const channelCreatedTs = snowflakeToTimestamp(channelId);
+  const cutoffTs = channelCreatedTs + 30_000; // 30 seconds after creation
+  const headers = { Authorization: `Bot ${botToken}` };
+
+  // Fetch up to 100 messages after the channel‐creation snowflake
+  const url = new URL(`https://discord.com/api/v10/channels/${channelId}/messages`);
+  url.searchParams.set("limit", "100");
+  url.searchParams.set("after", channelId);
+
+  const res = await fetch(url.toString(), { headers });
+  if (!res.ok) return "";
+
+  // API returns newest→oldest, so reverse for chronological
+  const batch: any[] = await res.json();
+  const msgs = Array.isArray(batch) ? batch.reverse() : [];
+
+  for (const m of msgs) {
+    const msgTs = new Date(m.timestamp).getTime();
+    if (msgTs > cutoffTs) break;       // outside 30s window
+    if (Array.isArray(m.mentions) && m.mentions.length > 0) {
+      return `<@${m.mentions[0].id}>`;
+    }
+  }
+
+  return "";
 }
 
 async function generateArchiveZip(
